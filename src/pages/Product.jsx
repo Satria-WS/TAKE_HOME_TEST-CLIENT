@@ -6,15 +6,17 @@ import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import { mobile } from "../responsive";
 import { useLocation } from "react-router-dom";
-import {useState , useEffect} from "react"
+import { useState, useEffect } from "react";
 import { publicRequest } from "../requestMethod";
+import { addProduct } from "../redux/cartRedux";
+import { useDispatch } from "react-redux";
 
 const Container = styled.div``;
 
 const Wrapper = styled.div`
   padding: 50px;
   display: flex;
-  ${mobile({ padding: "10px", flexDirection:"column" })}
+  ${mobile({ padding: "10px", flexDirection: "column" })}
 `;
 
 const ImgContainer = styled.div`
@@ -113,8 +115,8 @@ const Button = styled.button`
   cursor: pointer;
   font-weight: 500;
 
-  &:hover{
-      background-color: #f8f4f4;
+  &:hover {
+    background-color: #f8f4f4;
   }
 `;
 
@@ -122,17 +124,39 @@ const Product = () => {
   const location = useLocation();
   const id = location.pathname.split("/")[2];
   const [product, setProduct] = useState({});
-  
-  useEffect(()=> {
+  const [quantity, setQuantity] = useState(1);
+  const [color, setColor] = useState("");
+  const [size, setSize] = useState("");
+  const dispatch = useDispatch();
+
+  useEffect(() => {
     const getProduct = async () => {
       try {
         const res = await publicRequest.get("/products/find/" + id);
         setProduct(res.data);
-      } catch { }
+      } catch {}
     };
-          getProduct()
-  } ,[id])
-  console.log("product?",product)
+    getProduct();
+  }, [id]);
+  console.log("product?", product);
+
+  // + -
+  const handleQuantity = (type) => {
+    if (type === "increment") {
+      setQuantity(quantity + 1);
+    } else {
+      quantity > 1 && setQuantity(quantity - 1);
+    }
+  };
+
+  const handleClick = () => {
+    //update cart
+    dispatch(
+      // addProduct({ product, quantity, price: product.price * quantity })
+      addProduct({ ...product, quantity, color , size})
+      
+    );
+  };
 
   return (
     <Container>
@@ -144,35 +168,33 @@ const Product = () => {
         </ImgContainer>
         <InfoContainer>
           <Title>{product.title}</Title>
-          <Desc>
-            {product.desc}
-          </Desc>
-          <Price>{ product.price }</Price>
+          <Desc>{product.desc}</Desc>
+          <Price>$ {product.price}</Price>
           <FilterContainer>
             <Filter>
               <FilterTitle>Color</FilterTitle>
-              <FilterColor color="black" />
-              <FilterColor color="darkblue" />
-              <FilterColor color="gray" />
+              {product.color &&
+                product.color?.map((c) => (
+                  <FilterColor color={c} onClick={() => setColor(c)} />
+                ))}
             </Filter>
             <Filter>
               <FilterTitle>Size</FilterTitle>
-              <FilterSize>
-                <FilterSizeOption>XS</FilterSizeOption>
-                <FilterSizeOption>S</FilterSizeOption>
-                <FilterSizeOption>M</FilterSizeOption>
-                <FilterSizeOption>L</FilterSizeOption>
-                <FilterSizeOption>XL</FilterSizeOption>
+              <FilterSize onChange={(e) => setSize(e.target.value)}>
+                {product.size &&
+                  product.size?.map((s) => (
+                    <FilterSizeOption key={s}>{s}</FilterSizeOption>
+                  ))}
               </FilterSize>
             </Filter>
           </FilterContainer>
           <AddContainer>
             <AmountContainer>
-              <Remove />
-              <Amount>1</Amount>
-              <Add />
+              <Remove onClick={() => handleQuantity("decrement")} />
+              <Amount>{quantity}</Amount>
+              <Add onClick={() => handleQuantity("increment")} />
             </AmountContainer>
-            <Button>ADD TO CART</Button>
+            <Button onClick={handleClick}>ADD TO CART</Button>
           </AddContainer>
         </InfoContainer>
       </Wrapper>
